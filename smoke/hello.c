@@ -9,3 +9,5 @@ int main(void) {
 /* CI trigger after HTTPS submodule rewrite. */
 
 /* CI trigger after prefix creation fix. */
+
+/* CI trigger after smoke script execution fix. */
