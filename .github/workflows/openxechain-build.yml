@@ -1,0 +1,130 @@
+name: Build OpenXeChain X360 Toolchain
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/openxechain-build.yml'
+      - 'scripts/**'
+      - 'smoke/**'
+
+permissions:
+  contents: read
+
+env:
+  OPENXECHAIN_BUILDSCRIPT_COMMIT: eed1fa65bf9577fd31625764b320a90182ea9ade
+  PREFIX: ${{ github.workspace }}/out/xenon
+  BUILD_ROOT: ${{ github.workspace }}/work
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Host diagnostics
+        run: |
+          set -eux
+          uname -a
+          nproc
+          free -h
+          df -h
+          ulimit -a
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ca-certificates cmake ninja-build git python3 \
+            autoconf automake libtool pkg-config texinfo bison flex \
+            libgmp-dev libmpfr-dev libmpc-dev zlib1g-dev libzstd-dev
+
+      - name: Fetch pinned OpenXeChain buildscript
+        run: |
+          set -euxo pipefail
+          mkdir -p "$BUILD_ROOT"
+          git clone https://github.com/OpenXbox360Project/OpenXeChain.git "$BUILD_ROOT/OpenXeChain"
+          cd "$BUILD_ROOT/OpenXeChain"
+          git checkout "$OPENXECHAIN_BUILDSCRIPT_COMMIT"
+          git submodule update --init --recursive
+          git rev-parse HEAD | tee "$GITHUB_WORKSPACE/openxechain-commit.txt"
+          git submodule status | tee "$GITHUB_WORKSPACE/openxechain-submodules.txt"
+
+      - name: Patch buildscript for CI prefix and diagnostics
+        run: |
+          set -euxo pipefail
+          cd "$BUILD_ROOT/OpenXeChain"
+          cp build-xenon-toolchain build-xenon-toolchain.upstream
+          python3 "$GITHUB_WORKSPACE/scripts/patch_buildscript.py" \
+            build-xenon-toolchain "$PREFIX"
+          chmod +x build-xenon-toolchain
+          diff -u build-xenon-toolchain.upstream build-xenon-toolchain | tee "$GITHUB_WORKSPACE/buildscript-ci.patch" || true
+
+      - name: Build toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set +e
+          cd "$BUILD_ROOT/OpenXeChain"
+          ./build-xenon-toolchain 2>&1 | tee "$GITHUB_WORKSPACE/full-build.log"
+          rc=${PIPESTATUS[0]}
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          find . -name 'build.log' -o -name 'config.log' | sort | tee "$GITHUB_WORKSPACE/diagnostic-files.txt"
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            safe=$(echo "$f" | sed 's#^./##; s#[/]#__#g')
+            cp "$f" "$GITHUB_WORKSPACE/diag_${safe}"
+          done < "$GITHUB_WORKSPACE/diagnostic-files.txt"
+          exit "$rc"
+
+      - name: Toolchain smoke test
+        if: steps.toolchain.outcome == 'success'
+        run: |
+          set -euxo pipefail
+          export PATH="$PREFIX/bin:$PATH"
+          command -v clang
+          command -v lld-link
+          command -v synthxex
+          clang --version
+          lld-link --version
+          synthxex --help > "$GITHUB_WORKSPACE/synthxex-help.txt" 2>&1 || true
+          "$GITHUB_WORKSPACE/scripts/build_smoke_xex.sh" "$PREFIX" "$GITHUB_WORKSPACE/smoke/hello.c" "$GITHUB_WORKSPACE/out/hello.xex"
+          python3 "$GITHUB_WORKSPACE/scripts/verify_xex2.py" "$GITHUB_WORKSPACE/out/hello.xex"
+
+      - name: Package completed toolchain
+        if: steps.toolchain.outcome == 'success'
+        run: |
+          set -euxo pipefail
+          tar -C "$GITHUB_WORKSPACE/out" -cJf "$GITHUB_WORKSPACE/openxechain-x360-toolchain.tar.xz" xenon
+          sha256sum "$GITHUB_WORKSPACE/openxechain-x360-toolchain.tar.xz" | tee "$GITHUB_WORKSPACE/openxechain-x360-toolchain.sha256"
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openxechain-diagnostics-${{ github.run_number }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            full-build.log
+            diagnostic-files.txt
+            diag_*
+            openxechain-commit.txt
+            openxechain-submodules.txt
+            buildscript-ci.patch
+            synthxex-help.txt
+
+      - name: Upload reusable toolchain
+        if: steps.toolchain.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openxechain-x360-toolchain-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+          path: |
+            openxechain-x360-toolchain.tar.xz
+            openxechain-x360-toolchain.sha256
+            out/hello.xex
