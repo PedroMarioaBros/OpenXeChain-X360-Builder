@@ -47,9 +47,13 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p "$BUILD_ROOT"
-          git -c http.https://github.com/.extraheader= clone https://github.com/OpenXbox360Project/OpenXeChain.git "$BUILD_ROOT/OpenXeChain"
+          git -c http.https://github.com/.extraheader= clone https://github.com/OpenXeChain/buildscript.git "$BUILD_ROOT/OpenXeChain"
           cd "$BUILD_ROOT/OpenXeChain"
-          git checkout "$OPENXECHAIN_BUILDSCRIPT_COMMIT"
+          if git cat-file -e "$OPENXECHAIN_BUILDSCRIPT_COMMIT^{commit}" 2>/dev/null; then
+            git checkout "$OPENXECHAIN_BUILDSCRIPT_COMMIT"
+          else
+            echo "Pinned legacy commit is not present in current OpenXeChain/buildscript; using current checked-out revision."
+          fi
           git submodule update --init --recursive
           git rev-parse HEAD | tee "$GITHUB_WORKSPACE/openxechain-commit.txt"
           git submodule status | tee "$GITHUB_WORKSPACE/openxechain-submodules.txt"
@@ -58,11 +62,10 @@ jobs:
         run: |
           set -euxo pipefail
           cd "$BUILD_ROOT/OpenXeChain"
-          cp build-xenon-toolchain build-xenon-toolchain.upstream
-          python3 "$GITHUB_WORKSPACE/scripts/patch_buildscript.py" \
-            build-xenon-toolchain "$PREFIX"
-          chmod +x build-xenon-toolchain
-          diff -u build-xenon-toolchain.upstream build-xenon-toolchain | tee "$GITHUB_WORKSPACE/buildscript-ci.patch" || true
+          test -f build-toolchain.sh
+          cp build-toolchain.sh build-toolchain.sh.upstream
+          chmod +x build-toolchain.sh
+          : > "$GITHUB_WORKSPACE/buildscript-ci.patch"
 
       - name: Build toolchain
         id: toolchain
@@ -70,7 +73,7 @@ jobs:
         run: |
           set +e
           cd "$BUILD_ROOT/OpenXeChain"
-          ./build-xenon-toolchain 2>&1 | tee "$GITHUB_WORKSPACE/full-build.log"
+          PREFIX="$PREFIX" PARALLEL=2 ./build-toolchain.sh 2>&1 | tee "$GITHUB_WORKSPACE/full-build.log"
           rc=${PIPESTATUS[0]}
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           find . -name 'build.log' -o -name 'config.log' | sort | tee "$GITHUB_WORKSPACE/diagnostic-files.txt"
