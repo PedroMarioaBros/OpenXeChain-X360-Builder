@@ -11,3 +11,5 @@ clang --target=powerpc-none-eabi -c "$SRC" -o "$OBJ" -O2 -ffreestanding -fno-bui
 # flags, this step will fail with a preserved log for the next iteration.
 lld-link /entry:main /subsystem:xbox /out:"$EXE" "$OBJ"
 synthxex "$EXE" "$OUT"
+
+# ci-trigger-gitmodules-https
