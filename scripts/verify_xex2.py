@@ -5,3 +5,5 @@ print(p, "magic", data)
 if data != b"XEX2":
     raise SystemExit("FAIL: output is not XEX2")
 print("PASS: XEX2 header found")
+
+# trigger-ci-official-buildscript
