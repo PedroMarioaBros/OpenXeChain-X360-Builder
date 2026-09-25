@@ -11,3 +11,5 @@ if "/usr/local/xenon" not in s:
 s=s.replace("/usr/local/xenon", prefix.rstrip("/"))
 p.write_text(s)
 print("CI prefix patched:", prefix, "occurrences:", hits)
+
+# trigger-ci-after-clone-fix
