@@ -103,7 +103,7 @@ jobs:
           clang --version
           lld-link --version
           synthxex --help > "$GITHUB_WORKSPACE/synthxex-help.txt" 2>&1 || true
-          "$GITHUB_WORKSPACE/scripts/build_smoke_xex.sh" "$PREFIX" "$GITHUB_WORKSPACE/smoke/hello.c" "$GITHUB_WORKSPACE/out/hello.xex"
+          bash "$GITHUB_WORKSPACE/scripts/build_smoke_xex.sh" "$PREFIX" "$GITHUB_WORKSPACE/smoke/hello.c" "$GITHUB_WORKSPACE/out/hello.xex"
           python3 "$GITHUB_WORKSPACE/scripts/verify_xex2.py" "$GITHUB_WORKSPACE/out/hello.xex"
 
       - name: Package completed toolchain
