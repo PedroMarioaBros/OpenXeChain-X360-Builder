@@ -70,7 +70,9 @@ jobs:
           test -f build-toolchain.sh
           cp build-toolchain.sh build-toolchain.sh.upstream
           chmod +x build-toolchain.sh
-          : > "$GITHUB_WORKSPACE/buildscript-ci.patch"
+          # clang-cpp does not read clang.cfg; use clang -E so the Xbox target/sysroot cfg is honored.
+          sed -i 's#CPP="${PREFIX}/bin/clang-cpp"#CPP="${PREFIX}/bin/clang -E -nostdlib -I${PWD}/xecorelibtmp/include"#' build-toolchain.sh
+          diff -u build-toolchain.sh.upstream build-toolchain.sh > "$GITHUB_WORKSPACE/buildscript-ci.patch" || true
 
       - name: Build toolchain
         id: toolchain
