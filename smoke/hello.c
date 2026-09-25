@@ -5,3 +5,5 @@ int main(void) {
     for (;;) { __asm__ volatile("" ::: "memory"); }
     return 0;
 }
+
+/* CI trigger after HTTPS submodule rewrite. */
