@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Host diagnostics
         run: |
@@ -45,7 +47,7 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p "$BUILD_ROOT"
-          git clone https://github.com/OpenXbox360Project/OpenXeChain.git "$BUILD_ROOT/OpenXeChain"
+          git -c http.https://github.com/.extraheader= clone https://github.com/OpenXbox360Project/OpenXeChain.git "$BUILD_ROOT/OpenXeChain"
           cd "$BUILD_ROOT/OpenXeChain"
           git checkout "$OPENXECHAIN_BUILDSCRIPT_COMMIT"
           git submodule update --init --recursive
