@@ -107,7 +107,7 @@ jobs:
           python3 "$GITHUB_WORKSPACE/scripts/verify_xex2.py" "$GITHUB_WORKSPACE/out/hello.xex"
 
       - name: Package completed toolchain
-        if: steps.toolchain.outcome == 'success'
+        if: always() && steps.toolchain.outcome == 'success'
         run: |
           set -euxo pipefail
           tar -C "$GITHUB_WORKSPACE/out" -cJf "$GITHUB_WORKSPACE/openxechain-x360-toolchain.tar.xz" xenon
@@ -130,7 +130,7 @@ jobs:
             synthxex-help.txt
 
       - name: Upload reusable toolchain
-        if: steps.toolchain.outcome == 'success'
+        if: always() && steps.toolchain.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: openxechain-x360-toolchain-${{ github.run_number }}

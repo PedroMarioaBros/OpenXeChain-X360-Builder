@@ -5,11 +5,11 @@ export PATH="$PREFIX/bin:$PATH"
 mkdir -p "$(dirname "$OUT")"
 OBJ="${OUT%.xex}.o"
 EXE="${OUT%.xex}.exe"
-clang --target=powerpc-none-eabi -c "$SRC" -o "$OBJ" -O2 -ffreestanding -fno-builtin
+clang --target=ppc32-xbox360 -c "$SRC" -o "$OBJ" -O2 -ffreestanding -fno-builtin
 # OpenXeChain's exact runtime/link recipe is intentionally validated here
 # rather than silently fabricating one. If upstream tools require different
 # flags, this step will fail with a preserved log for the next iteration.
-lld-link /entry:main /subsystem:xbox /out:"$EXE" "$OBJ"
-synthxex "$EXE" "$OUT"
+lld-link /entry:main /subsystem:xbox360 /out:"$EXE" "$OBJ"
+synthxex -i "$EXE" -o "$OUT"
 
 # ci-trigger-gitmodules-https
