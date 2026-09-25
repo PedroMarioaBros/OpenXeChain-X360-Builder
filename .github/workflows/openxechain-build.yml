@@ -54,6 +54,9 @@ jobs:
           else
             echo "Pinned legacy commit is not present in current OpenXeChain/buildscript; using current checked-out revision."
           fi
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+          git submodule sync --recursive
           git submodule update --init --recursive
           git rev-parse HEAD | tee "$GITHUB_WORKSPACE/openxechain-commit.txt"
           git submodule status | tee "$GITHUB_WORKSPACE/openxechain-submodules.txt"
