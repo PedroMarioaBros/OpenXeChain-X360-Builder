@@ -1,0 +1,47 @@
+name: Fetch verified XexTool Linux
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/fetch-xextool.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download official Team-Resurgent XexTool release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir -p out
+          gh release download latest             --repo Team-Resurgent/XexTool             --pattern 'XexTool-linux-x64.zip'             --dir out
+          echo '6f9dc34a6b2509102625310bf835f90f0562db393e1c33b1acb3f7131c3e6240  out/XexTool-linux-x64.zip' | sha256sum -c -
+          unzip -l out/XexTool-linux-x64.zip
+          mkdir -p out/extracted
+          unzip -q out/XexTool-linux-x64.zip -d out/extracted
+          find out/extracted -maxdepth 3 -type f -printf '%p %s bytes\n'
+          XEXTOOL=$(find out/extracted -type f -name 'XexTool' | head -1)
+          test -n "$XEXTOOL"
+          chmod +x "$XEXTOOL"
+          "$XEXTOOL" --help > out/xextool-help.txt 2>&1 || true
+          "$XEXTOOL" > out/xextool-usage.txt 2>&1 || true
+
+      - name: Upload verified XexTool
+        uses: actions/upload-artifact@v4
+        with:
+          name: xextool-linux-x64-verified
+          retention-days: 30
+          compression-level: 0
+          path: |
+            out/XexTool-linux-x64.zip
+            out/extracted/
+            out/xextool-help.txt
+            out/xextool-usage.txt
