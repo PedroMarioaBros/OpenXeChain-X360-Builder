@@ -1,5 +1,14 @@
 # OpenXeChain-X360-Builder
 
+## 🧭 Comece aqui — projetos Xbox 360 PMCN Studios
+
+**[ABRIR PAINEL CENTRAL DOS PROJETOS](docs/PAINEL_PMCN_XBOX360.md)** — status real do SM64, SMB de NES, compilador na nuvem, tarefas pendentes e links para continuar pelo celular.
+
+**Compilador validado em CI:** [OpenXeChain Xbox 360 Toolchain v1](https://github.com/PedroMarioaBros/OpenXeChain-X360-Builder/releases/tag/openxechain-x360-toolchain-v1), com Clang, linker, bibliotecas e SynthXEX; produziu `hello.xex` com cabeçalho XEX2. Isso **não garante boot de qualquer programa nem gera ports automaticamente**. O status de cada jogo fica no painel.
+
+---
+
+
 Fábrica pública e reproduzível de toolchain/XEX para os projetos Xbox 360 da PMCN Studios.
 
 ## Objetivo
